@@ -171,6 +171,13 @@ EOF
 
     check_versions
 
+    # Detecta se está usando imagem base customizada
+    USING_CUSTOM_BASE=false
+    if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] && [[ -n "${IMAGE_BASE:-}" ]]; then
+        USING_CUSTOM_BASE=true
+        print_info "Imagem base customizada detectada: ${IMAGE_BASE}"
+    fi
+
     TOTVS_DIR="./totvs"
     TOTVS_PROTHEUS_DIR="${TOTVS_DIR}/protheus"
     TOTVS_PROTHEUS_FILES=(
@@ -234,71 +241,78 @@ EOF
 
         print_success " * Arquivo 'Dockerfile' encontrado."
 
-    for dir in "${TOTVS_DIR}" "${TOTVS_PROTHEUS_DIR}" "${TOTVS_PROTHEUS_DATA_DIR}"; do
-        print_verify "Verificando o diretório '${dir}'..."
-        
-        check_dir "${dir}"
-        
-        print_success " * Diretório '${dir}' encontrado."
-    done
+    # Pula validação de recursos se estiver usando imagem base customizada
+    if [[ "$USING_CUSTOM_BASE" == "true" ]]; then
+        print_info "Usando imagem base customizada - pulando validação de recursos locais"
+    else
 
-    # ----------------------------------------------------------------------
+        for dir in "${TOTVS_DIR}" "${TOTVS_PROTHEUS_DIR}" "${TOTVS_PROTHEUS_DATA_DIR}"; do
+            print_verify "Verificando o diretório '${dir}'..."
+            
+            check_dir "${dir}"
+            
+            print_success " * Diretório '${dir}' encontrado."
+        done
 
-    print_verify "Verificando o arquivo em protheus/..."
+        # ----------------------------------------------------------------------
 
-    rpo_found=false
-    for rpo_file in "tttm120.rpo" "tttp120.rpo" "ttte120.rpo" "ttts120.rpo"; do
-        rpo_path="${TOTVS_PROTHEUS_DIR}/apo/${rpo_file}"
-        if [ -f "$rpo_path" ]; then
-            TOTVS_RPO_FILE="$rpo_path"
-            rpo_found=true
-            break
+        print_verify "Verificando o arquivo em protheus/..."
+
+        rpo_found=false
+        for rpo_file in "tttm120.rpo" "tttp120.rpo" "ttte120.rpo" "ttts120.rpo"; do
+            rpo_path="${TOTVS_PROTHEUS_DIR}/apo/${rpo_file}"
+            if [ -f "$rpo_path" ]; then
+                TOTVS_RPO_FILE="$rpo_path"
+                rpo_found=true
+                break
+            fi
+        done
+
+        if [ "$rpo_found" = false ]; then
+            print_error "Nenhum arquivo RPO encontrado (tttmp.rpo, tttp.rpo, ttts.rpo ou ttte.rpo) em '${TOTVS_PROTHEUS_DIR}/apo/'."
+            exit 1
         fi
-    done
 
-    if [ "$rpo_found" = false ]; then
-        print_error "Nenhum arquivo RPO encontrado (tttmp.rpo, tttp.rpo, ttts.rpo ou ttte.rpo) em '${TOTVS_PROTHEUS_DIR}/apo/'."
-        exit 1
-    fi
+        for file in "${TOTVS_PROTHEUS_FILES[@]}"; do
 
-    for file in "${TOTVS_PROTHEUS_FILES[@]}"; do
+            check_file "${file}"
 
-        check_file "${file}"
+            print_success " * Arquivo '${file}' encontrado."
+        done
 
-        print_success " * Arquivo '${file}' encontrado."
-    done
+        # ----------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
+        print_verify "Verificando o diretório system..."
 
-    print_verify "Verificando o diretório system..."
+        check_dir "${TOTVS_SYSTEM_DIR}"
 
-    check_dir "${TOTVS_SYSTEM_DIR}"
+        print_success " * Diretório '${TOTVS_SYSTEM_DIR}' encontrado."
 
-    print_success " * Diretório '${TOTVS_SYSTEM_DIR}' encontrado."
+        print_verify "Verificando o arquivo em protheus_data/system/..."
+        for file in "${TOTVS_SYSTEM_FILES[@]}"; do
+            
+            check_file "${file}"
+            
+            print_success " * Arquivo '${file}' encontrado."
+        done 
 
-    print_verify "Verificando o arquivo em protheus_data/system/..."
-    for file in "${TOTVS_SYSTEM_FILES[@]}"; do
-        
-        check_file "${file}"
-        
-        print_success " * Arquivo '${file}' encontrado."
-    done 
+        # ----------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
+        print_verify "Verificando o diretório systemload..."
 
-    print_verify "Verificando o diretório systemload..."
+        check_dir "${TOTVS_SYSTEMLOAD_DIR}"
 
-    check_dir "${TOTVS_SYSTEMLOAD_DIR}"
+        print_success " * Diretório '${TOTVS_SYSTEMLOAD_DIR}' encontrado."
 
-    print_success " * Diretório '${TOTVS_SYSTEMLOAD_DIR}' encontrado."
+        print_verify "Verificando o arquivo em protheus_data/systemload/..."
+        for file in "${TOTVS_SYSTEMLOAD_FILES[@]}"; do
+            
+            check_file "${file}"
+            
+            print_success " * Arquivo '${file}' encontrado."
+        done
 
-    print_verify "Verificando o arquivo em protheus_data/systemload/..."
-    for file in "${TOTVS_SYSTEMLOAD_FILES[@]}"; do
-        
-        check_file "${file}"
-        
-        print_success " * Arquivo '${file}' encontrado."
-    done 
+    fi 
 
 # ----------------------------------------------------
 #   SEÇÃO 5: EXECUÇÃO DO DOCKER BUILD
@@ -312,9 +326,9 @@ EOF
     [[ ${#BUILD_ARGS[@]} -gt 0 ]] && print_info "Build Args: ${BUILD_ARGS[*]}"
 
     # Detecta se está rodando no GitHub Actions e adiciona IMAGE_BASE
-    if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] && [[ -n "${IMAGE_BASE:-}" ]]; then
+    if [[ "$USING_CUSTOM_BASE" == "true" ]]; then
         BUILD_ARGS+=("--build-arg" "IMAGE_BASE=${IMAGE_BASE}")
-        print_info "GitHub Actions detectado - usando IMAGE_BASE: ${IMAGE_BASE}"
+        print_info "Usando IMAGE_BASE: ${IMAGE_BASE}"
     fi
 
     docker build \
