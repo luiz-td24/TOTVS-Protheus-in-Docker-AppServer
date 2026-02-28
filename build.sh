@@ -311,6 +311,12 @@ EOF
     print_info "Compress Resources: $([ "$EXTRACT_RESOURCES" = "true" ] && echo "Habilitado" || echo "Desabilitado")"
     [[ ${#BUILD_ARGS[@]} -gt 0 ]] && print_info "Build Args: ${BUILD_ARGS[*]}"
 
+    # Detecta se está rodando no GitHub Actions e adiciona IMAGE_BASE
+    if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] && [[ -n "${IMAGE_BASE:-}" ]]; then
+        BUILD_ARGS+=("--build-arg" "IMAGE_BASE=${IMAGE_BASE}")
+        print_info "GitHub Actions detectado - usando IMAGE_BASE: ${IMAGE_BASE}"
+    fi
+
     docker build \
         --build-arg EXTRACT_RESOURCES="$EXTRACT_RESOURCES" \
         ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} \

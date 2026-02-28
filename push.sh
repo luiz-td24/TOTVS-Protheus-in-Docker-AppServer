@@ -5,7 +5,17 @@
 # DESCRIÇÃO: Envia a imagem Docker do servidor de aplicações (appserver) para o Docker Hub.
 # AUTOR: Julian de Almeida Santos
 # DATA: 2025-10-12
-# USO: ./push.sh
+# USO: ./push.sh [OPTIONS]
+#
+# OPÇÕES:
+#   --no-latest                 Não faz push da tag 'latest'
+#   --tag=<TAG>                 Define uma tag customizada para push
+#   -h, --help                  Exibe esta mensagem de ajuda
+#
+# EXEMPLOS:
+#   ./push.sh
+#   ./push.sh --no-latest
+#   ./push.sh --tag=custom-tag
 # ==============================================================================
 
 # --- Configuração de Robustez (Boas Práticas Bash) ---
@@ -14,45 +24,180 @@
 # -o pipefail: Garante que um pipeline (ex: cat | tar) falhe se qualquer comando falhar.
 set -euo pipefail
 
-# 1. Navegar para o diretório do script para garantir caminhos relativos corretos
-cd "$(dirname "$0")"
+# ----------------------------------------------------
+#   SEÇÃO 1: DEFINICAO DE FUNCOES AUXILIARES
+# ----------------------------------------------------
 
-# 2. Carregar Configuração Centralizada (esperado no diretório pai)
-if [ -f "../versions.env" ]; then
-    source "../versions.env"
-else
-    echo "🚨 Erro: Arquivo '../versions.env' não encontrado."
-    exit 1
-fi
+    # --- Funções de Impressão ---
+    print_success() {
+        local message="$1"
+        echo "✅ $message"
+    }
 
-# 3. Determinar variáveis específicas deste serviço
-IMAGE_TAG="${APPSERVER_VERSION}"
-IMAGE_NAME="${APPSERVER_IMAGE_NAME}"
+    print_error() {
+        local message="$1"
+        echo "🚨 Erro: $message" >&2
+    }
 
-if [ -z "$IMAGE_TAG" ] || [ -z "$IMAGE_NAME" ] || [ -z "$DOCKER_USER" ]; then
-    echo "🚨 Erro: Configurações incompletas em versions.env"
-    exit 1
-fi
+    print_warning() {
+        local message="$1"
+        echo "⚠️ Aviso: $message"
+    }
 
-FULL_TAG="${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-LATEST_TAG="${DOCKER_USER}/${IMAGE_NAME}:latest"
+    print_info() {
+        local message="$1"
+        echo "ℹ️ $message"
+    }
 
-echo "--------------------------------------------------"
-echo "Pushing image: $FULL_TAG"
-echo "--------------------------------------------------"
-docker push "$FULL_TAG"
+    print_docker() {
+        local message="$1"
+        echo "🐳 $message"
+    }
 
-# 4. Push da tag 'latest' apenas se PUSH_LATEST for true
-# No GitHub Actions, definiremos isso com base na branch.
-# Localmente, o padrão é true para facilitar.
-if [ "${PUSH_LATEST:-true}" = "true" ]; then
-    echo "--------------------------------------------------"
-    echo "Tagging and pushing: $LATEST_TAG"
-    echo "--------------------------------------------------"
-    docker tag "$FULL_TAG" "$LATEST_TAG"
-    docker push "$LATEST_TAG"
-    echo "✅ Successfully pushed $FULL_TAG and $LATEST_TAG"
-else
-    echo "⏭️ Skipping 'latest' tag push (PUSH_LATEST is false)"
-    echo "✅ Successfully pushed $FULL_TAG"
-fi
+    show_help() {
+        cat << EOF
+USO: ./push.sh [OPTIONS]
+
+OPÇÕES:
+  --no-latest                 Não faz push da tag 'latest'
+  --tag=<TAG>                 Define uma tag customizada para push
+  -h, --help                  Exibe esta mensagem de ajuda
+
+EXEMPLOS:
+  ./push.sh
+  ./push.sh --no-latest
+  ./push.sh --tag=custom-tag
+
+EOF
+        exit 0
+    }
+
+    check_versions() {
+        if [ -f "versions.env" ]; then
+            # shellcheck source=versions.env
+            source "versions.env"
+            print_info "Versões carregadas do 'versions.env'"
+        else
+            print_error "Arquivo 'versions.env' não encontrado."
+            exit 1
+        fi
+    }
+
+# ----------------------------------------------------
+#   SEÇÃO 2: PARSE DE ARGUMENTOS
+# ----------------------------------------------------
+
+    PUSH_LATEST="true"
+    CUSTOM_TAG=""
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --no-latest)
+                PUSH_LATEST="false"
+                shift
+                ;;
+            --tag=*)
+                CUSTOM_TAG="${1#*=}"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                ;;
+            *)
+                print_error "Opção desconhecida: $1"
+                show_help
+                ;;
+        esac
+    done
+
+# ----------------------------------------------------
+#   SEÇÃO 3: DEFINIÇÕES VARIAVEIS
+# ----------------------------------------------------
+
+    check_versions
+
+    # Detecta branch atual (local ou GitHub Actions)
+    if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+        CURRENT_BRANCH="${GITHUB_REF_NAME:-}"
+        print_info "GitHub Actions detectado - Branch: ${CURRENT_BRANCH}"
+    elif command -v git &> /dev/null; then
+        CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+        [[ -n "$CURRENT_BRANCH" ]] && print_info "Branch local detectada: ${CURRENT_BRANCH}"
+    else
+        CURRENT_BRANCH=""
+    fi
+
+    [[ -z "$CURRENT_BRANCH" ]] && print_warning "Não foi possível detectar a branch"
+
+    # Desabilita push da tag 'latest' se não estiver em main/master
+    if [[ "$PUSH_LATEST" == "true" ]] && [[ -n "$CURRENT_BRANCH" ]]; then
+        if [[ "$CURRENT_BRANCH" != "main" ]] && [[ "$CURRENT_BRANCH" != "master" ]]; then
+            PUSH_LATEST="false"
+            print_warning "Tag 'latest' desabilitada - branch atual: ${CURRENT_BRANCH}"
+        fi
+    fi
+
+    # Define a tag final
+    if [[ -n "$CUSTOM_TAG" ]]; then
+        FULL_TAG="$CUSTOM_TAG"
+    else
+        FULL_TAG="${DOCKER_USER}/${APPSERVER_IMAGE_NAME}:${APPSERVER_VERSION}"
+    fi
+
+    LATEST_TAG="${DOCKER_USER}/${APPSERVER_IMAGE_NAME}:latest"
+
+    # Validação de variáveis
+    if [[ -z "${APPSERVER_VERSION:-}" ]] || [[ -z "${APPSERVER_IMAGE_NAME:-}" ]] || [[ -z "${DOCKER_USER:-}" ]]; then
+        print_error "Configurações incompletas em versions.env"
+        exit 1
+    fi
+
+# ----------------------------------------------------
+#   SEÇÃO 4: VERIFICAÇÃO DO DOCKER
+# ----------------------------------------------------
+
+    print_info "Verificando se o Docker está instalado e funcionando..."
+
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker não está instalado ou não está no PATH."
+        exit 1
+    fi
+
+    if ! docker info &> /dev/null; then
+        print_error "Docker não está rodando ou não há permissões para acessá-lo."
+        exit 1
+    fi
+
+    print_success "Docker está instalado e funcionando corretamente."
+
+# ----------------------------------------------------
+#   SEÇÃO 5: PUSH DA IMAGEM
+# ----------------------------------------------------
+
+    print_docker "Iniciando push da imagem..."
+    print_info "Tag: $FULL_TAG"
+
+    docker push "$FULL_TAG" || {
+        print_error "Falha ao fazer push da imagem. Verifique os logs acima."
+        exit 1
+    }
+
+    print_success "Push concluído: $FULL_TAG"
+
+    # Push da tag 'latest'
+    if [[ "$PUSH_LATEST" == "true" ]]; then
+        print_docker "Criando tag 'latest'..."
+        docker tag "$FULL_TAG" "$LATEST_TAG"
+        
+        print_docker "Fazendo push da tag 'latest'..."
+        docker push "$LATEST_TAG" || {
+            print_error "Falha ao fazer push da tag 'latest'."
+            exit 1
+        }
+        
+        print_success "Push concluído: $LATEST_TAG"
+    else
+        print_warning "Push da tag 'latest' desabilitado."
+    fi
+
+    print_success "Processo finalizado com sucesso!"
