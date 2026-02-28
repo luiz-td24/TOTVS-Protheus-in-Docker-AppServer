@@ -1,0 +1,23 @@
+**/temp/
+**/temp/
+
+# Ignora tudo dentro das pastas
+packages/**
+totvs/protheus/**
+totvs/protheus_data/**
+
+# Permite versionar a estrutura (diretórios)
+!packages/
+!totvs/protheus/**/
+!totvs/protheus_data/
+!totvs/protheus_data/**/
+
+# Permite os arquivos sentinela
+!.gitkeep
+
+# Gemini CLI
+GEMINI.md
+.geminiignore
+
+# AmazonQ CLI
+.amazonq/rules/memory-bank/project-memory.md
