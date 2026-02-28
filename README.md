@@ -43,7 +43,7 @@ Esta imagem é versátil e pode operar em três modos distintos, configurados at
           --name totvs_appserver \
           --network totvs \
           -p 1234:1234 \
-          -p 12345:12345 \
+          -p 1235:1235 \
           -e "APPSERVER_MODE=application" \
           juliansantosinfo/totvs_appserver:latest
         ```
@@ -61,9 +61,9 @@ Esta imagem é versátil e pode operar em três modos distintos, configurados at
     *   **Modo SQlite Server:**
         ```bash
         docker run -d \
-          --name totvs_apprest \
+          --name totvs_appsqlite \
           --network totvs \
-          -p 8080:8080 \
+          -p 12346:12346 \
           -e "APPSERVER_MODE=sqlite" \
           juliansantosinfo/totvs_appserver:latest
         ```
@@ -72,7 +72,7 @@ Esta imagem é versátil e pode operar em três modos distintos, configurados at
 
 Caso queira construir a imagem localmente:
 
-1.  Baixe os binários do servidor de aplicação, dicionários, help de campos, menus e o repositório de objetos (tttm120.rpo) e coloque nos disretórios correspondentes.
+1.  Baixe os binários do servidor de aplicação, dicionários, help de campos, menus e o repositório de objetos (tttm120.rpo) e coloque nos diretórios correspondentes.
 
     Exemplo da estrutura de arquivos para o binário do servidor de aplicação e repositório de objetos.
 
@@ -105,7 +105,97 @@ Caso queira construir a imagem localmente:
     ```bash
     ./build.sh
     ```
-    *Nota: O build utiliza o gerenciador de pacotes dinâmico ($PKG_MGR) para configurar dependências como gzip e procps.*
+
+### Opções de Build
+
+O script `build.sh` suporta várias opções:
+
+```bash
+./build.sh [OPTIONS]
+```
+
+**Opções disponíveis:**
+- `--progress=<MODE>` - Define o modo de progresso (auto|plain|tty) [padrão: auto]
+- `--no-cache` - Desabilita o cache do Docker
+- `--no-extract` - Desabilita compressão de recursos no build
+- `--build-arg KEY=VALUE` - Passa argumentos adicionais para o Docker build
+- `--tag=<TAG>` - Define uma tag customizada para a imagem
+- `-h, --help` - Exibe ajuda
+
+**Exemplos:**
+```bash
+# Build padrão
+./build.sh
+
+# Build sem cache com progresso detalhado
+./build.sh --progress=plain --no-cache
+
+# Build com imagem base customizada
+./build.sh --build-arg IMAGE_BASE=custom:tag
+
+# Build com tag customizada
+./build.sh --tag=myuser/appserver:1.0
+```
+
+### Build com Imagem Base Customizada
+
+Quando usando uma imagem base customizada que já contém os recursos do Protheus (via `IMAGE_BASE` no `versions.env`), o script automaticamente pula a validação de diretórios locais:
+
+```bash
+# No GitHub Actions, IMAGE_BASE é carregado automaticamente
+# Para build local com imagem customizada:
+export IMAGE_BASE=juliansantosinfo/imagebase:totvs.protheus.appserver.1212510
+./build.sh
+```
+
+## Push para Registry
+
+Para enviar a imagem para o Docker Hub:
+
+```bash
+./push.sh [OPTIONS]
+```
+
+**Opções disponíveis:**
+- `--no-latest` - Não faz push da tag 'latest'
+- `--tag=<TAG>` - Define uma tag customizada para push
+- `-h, --help` - Exibe ajuda
+
+**Comportamento:**
+- A tag `latest` só é enviada quando em branches `main` ou `master`
+- Em outras branches, apenas a tag versionada é enviada
+
+**Exemplos:**
+```bash
+# Push padrão (versão + latest se em main/master)
+./push.sh
+
+# Push apenas da versão (sem latest)
+./push.sh --no-latest
+
+# Push de tag customizada
+./push.sh --tag=myuser/appserver:custom
+```
+
+## CI/CD com GitHub Actions
+
+O projeto inclui workflow automatizado em `.github/workflows/deploy.yml` que:
+
+1. **Detecta mudanças relevantes** - Ignora alterações em documentação e configurações
+2. **Carrega imagem base customizada** - Usa `IMAGE_BASE` do `versions.env`
+3. **Build automatizado** - Executa `./build.sh` com detecção de ambiente
+4. **Push condicional** - Envia `latest` apenas em branches principais
+
+**Configuração necessária:**
+
+Adicione os secrets no repositório GitHub:
+- `DOCKER_USERNAME` - Usuário do Docker Hub
+- `DOCKER_TOKEN` - Token de acesso do Docker Hub
+
+**Triggers:**
+- Push em branches: `master`, `main`, `12.1.*`
+- Pull requests para essas branches
+- Execução manual via `workflow_dispatch`
 
 ## Variáveis de Ambiente
 

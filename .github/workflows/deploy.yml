@@ -2,9 +2,29 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master", "main", "12.1.*" ]
+    paths-ignore:
+      - '**/.vscode/**'
+      - '**/docs/**'
+      - '**/scripts/hooks/**'
+      - '**/.env.example'
+      - '**/.gitignore'
+      - '**/CHANGELOG'
+      - '**/LICENSE.txt'
+      - '**/README.md'
+      - '**/docker-compose*'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master", "main", "12.1.*" ]
+    paths-ignore:
+      - '**/.vscode/**'
+      - '**/docs/**'
+      - '**/scripts/hooks/**'
+      - '**/.env.example'
+      - '**/.gitignore'
+      - '**/CHANGELOG'
+      - '**/LICENSE.txt'
+      - '**/README.md'
+      - '**/docker-compose*'
   workflow_dispatch:
 
 jobs:
@@ -19,6 +39,11 @@ jobs:
       
       - name: Make scripts executable
         run: chmod +x *.sh
+
+      - name: Load environment variables
+        run: |
+          source versions.env
+          echo "IMAGE_BASE=${IMAGE_BASE}" >> $GITHUB_ENV
 
       - name: login to registry
         uses: docker/login-action@v3.3.0
