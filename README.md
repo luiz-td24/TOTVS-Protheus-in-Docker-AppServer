@@ -72,39 +72,68 @@ Esta imagem é versátil e pode operar em três modos distintos, configurados at
 
 Caso queira construir a imagem localmente:
 
-1.  Baixe os binários do servidor de aplicação, dicionários, help de campos, menus e o repositório de objetos (tttm120.rpo) e coloque nos diretórios correspondentes.
+### 1. Preparar Pacotes
 
-    Exemplo da estrutura de arquivos para o binário do servidor de aplicação e repositório de objetos.
+Baixe os binários do servidor de aplicação, dicionários, help de campos, menus e o repositório de objetos (tttm120.rpo) e coloque nos diretório `packages/`:
 
-    ```txt
-    protheus
-    ├── apo
-    │   └── tttm120.rpo
-    └── bin
-        └── appserver
-            ├── appserver.ini
-            ├── appsrvlinux
-            ├── ...
+```txt
+packages/
+├── 25-10-06-BRA-DICIONARIOS_COMPL_12_1_2510.ZIP
+├── 25-10-06-BRA-HELPS_COMPL_12_1_2510.ZIP
+├── 25-10-06-BRA-MENUS_12_1_2510.ZIP
+├── 25-10-06-P12_APPSERVER_BUILD-24.3.1.1_LINUX_X64.TAR.GZ
+├── 25-10-06-P12_SMARTCLIENT_WEBAPP_10.1.4-LINUX_X64.TAR.GZ
+└── 25-10-06-REPOSITORIO_DE_OBJETOS_BRASIL_12_1_2510_TTTM120.RPO
+```
 
-    protheus_data
-    ├── data
-    ├── system
+**Arquivos necessários:**
+- **AppServer Binary** - `*APPSERVER_BUILD*.TAR.GZ`
+- **SmartClient WebApp** - `*SMARTCLIENT_WEBAPP*.TAR.GZ`
+- **Repositório de Objetos (RPO)** - `*REPOSITORIO_DE_OBJETOS*.RPO`
+- **Dicionários** - `*DICIONARIOS_COMPL*.ZIP`
+- **Helps** - `*HELPS_COMPL*.ZIP`
+- **Menus** - `*MENUS*.ZIP`
+
+### 2. Extrair Pacotes
+
+Execute o script `unpack.sh` para extrair os pacotes para a estrutura correta:
+
+```bash
+./unpack.sh
+```
+
+Isso criará a seguinte estrutura:
+
+```txt
+totvs/
+├── protheus/
+│   ├── apo/
+│   │   └── tttm120.rpo
+│   └── bin/
+│       └── appserver/
+│           ├── appserver.ini
+│           ├── appsrvlinux
+│           └── webapp.so
+└── protheus_data/
+    ├── system/
     │   ├── sigaacd.xnu
     │   ├── sigaagd.xnu
-    │   ├── sigaagr.xnu
-    │   ├── ...
-    └── systemload
+    │   └── ...
+    └── systemload/
         ├── hlpeng.txt
         ├── hlppor.txt
         ├── hlpspa.txt
         ├── sx2.unq
         └── sxsbra.txt
-    ```
+```
 
-2.  Execute o script de build:
-    ```bash
-    ./build.sh
-    ```
+### 3. Executar Build
+
+Execute o script de build:
+
+```bash
+./build.sh
+```
 
 ### Opções de Build
 
