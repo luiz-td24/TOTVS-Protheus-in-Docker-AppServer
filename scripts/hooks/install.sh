@@ -33,6 +33,7 @@ set -euo pipefail
     # Garante permissão de execução nos scripts de hook
     chmod +x scripts/hooks/pre-commit.sh
     chmod +x scripts/hooks/commit-msg.sh
+    chmod +x scripts/hooks/post-checkout.sh
 
     print_info "Configurando Git Hooks..."
 
@@ -51,5 +52,14 @@ EOF
 ./scripts/hooks/commit-msg.sh "\$1"
 EOF
     chmod +x "$COMMIT_MSG_HOOK"
+
+    # --- 3. Hook Post-Checkout ---
+    POST_CHECKOUT_HOOK=".git/hooks/post-checkout"
+    print_plain "Instalando post-checkout em $POST_CHECKOUT_HOOK..."
+    cat <<EOF > "$POST_CHECKOUT_HOOK"
+#!/bin/bash
+./scripts/hooks/post-checkout.sh "\$1" "\$2" "\$3"
+EOF
+    chmod +x "$POST_CHECKOUT_HOOK"
 
     print_success "Git Hooks instalados com sucesso!"

@@ -2,100 +2,105 @@
 #
 # ==============================================================================
 # SCRIPT: versions.sh
-# DESCRIÇÃO: Valida se a versão definida nos Dockerfiles corresponde à versão
+# DESCRIÇÃO: Valida se a versão definida no Dockerfile corresponde à versão
 #            centralizada no arquivo versions.env.
 # AUTOR: Julian de Almeida Santos
 # DATA: 2025-10-12
 # USO: ./scripts/validation/versions.sh [--fix]
 # ==============================================================================
 
-set -u
+# --- Configuração de Robustez (Boas Práticas Bash) ---
+set -euo pipefail
 
-# Caminho para o versions.env (assumindo execução da raiz ou de scripts/validation/)
-if [ -f "versions.env" ]; then
-    source "versions.env"
-elif [ -f "../../versions.env" ]; then
-    source "../../versions.env"
-    # Ajusta o path se estiver rodando de dentro de scripts/validation/
-    cd ../..
-else
-    echo "🚨 Erro: Arquivo 'versions.env' não encontrado."
-    exit 1
-fi
+# ----------------------------------------------------
+#   SEÇÃO 1: DEFINICAO DE FUNCOES AUXILIARES
+# ----------------------------------------------------
 
-AUTO_FIX=false
-if [[ "${1:-}" == "--fix" ]]; then
-    AUTO_FIX=true
-fi
+    print_success() {
+        echo "✅ $1"
+    }
 
-EXIT_CODE=0
+    print_error() {
+        echo "❌ $1" >&2
+    }
 
-# Função de Validação
-validate_service() {
-    local service=$1
-    local version_var=$2
-    local dockerfile="./Dockerfile"
-    local expected_version="${!version_var}"
+    print_warning() {
+        echo "⚠️ $1"
+    }
 
-    if [ ! -f "$dockerfile" ]; then
-        echo "⚠️  Aviso: Dockerfile não encontrado para $service. Pulando."
-        return
+    print_info() {
+        echo "🔍 $1"
+    }
+
+    print_plain() {
+        echo "$1"
+    }
+
+# ----------------------------------------------------
+#   SEÇÃO 2: PARSE DE ARGUMENTOS
+# ----------------------------------------------------
+
+    AUTO_FIX=false
+
+    if [[ "${1:-}" == "--fix" ]]; then
+        AUTO_FIX=true
     fi
 
-    # Extrai a versão atual (procura por LABEL release= ou LABEL version=)
-    # 1. grep: busca a linha
-    # 2. head: garante apenas a primeira ocorrência
-    # 3. cut: pega o valor depois do =
-    # 4. tr: remove aspas e espaços
-    local actual_version=$(grep -iE "LABEL (release|version)=" "$dockerfile" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
-    
-    # Identifica qual label está sendo usada para o possível fix
-    local label_type=$(grep -iE -o "LABEL (release|version)=" "$dockerfile" | head -n 1 | cut -d' ' -f2 | cut -d'=' -f1)
+# ----------------------------------------------------
+#   SEÇÃO 3: CARREGAMENTO DE CONFIGURAÇÕES
+# ----------------------------------------------------
 
-    if [ "$actual_version" != "$expected_version" ]; then
+    if [ -f "versions.env" ]; then
+        source "versions.env"
+    elif [ -f "../../versions.env" ]; then
+        source "../../versions.env"
+        cd ../..
+    else
+        print_error "Arquivo 'versions.env' não encontrado."
+        exit 1
+    fi
+
+# ----------------------------------------------------
+#   SEÇÃO 4: VALIDAÇÃO DE VERSÃO
+# ----------------------------------------------------
+
+    DOCKERFILE="./Dockerfile"
+
+    if [ ! -f "$DOCKERFILE" ]; then
+        print_warning "Dockerfile não encontrado. Pulando validação."
+        exit 0
+    fi
+
+    print_info "Iniciando validação de versões..."
+    print_plain "-----------------------------------"
+
+    # Extrai versão atual do Dockerfile
+    ACTUAL_VERSION=$(grep -iE "LABEL release=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
+    EXPECTED_VERSION="${APPSERVER_VERSION}"
+
+    if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
         if [ "$AUTO_FIX" = true ]; then
-            echo "🔧 Corrigindo $service: $actual_version -> $expected_version"
+            print_info "Corrigindo: $ACTUAL_VERSION -> $EXPECTED_VERSION"
             
-            # Substitui a versão no arquivo usando sed
-            # Usa regex para garantir que pegamos a linha certa (release ou version)
-            sed -i "s/LABEL $label_type="$actual_version"/LABEL $label_type="$expected_version"/" "$dockerfile"
+            sed -i "s/LABEL release=\"$ACTUAL_VERSION\"/LABEL release=\"$EXPECTED_VERSION\"/" "$DOCKERFILE"
             
             # Verifica se deu certo
-            local new_version=$(grep -iE "LABEL (release|version)=" "$dockerfile" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
-            if [ "$new_version" == "$expected_version" ]; then
-                echo "✅ $service corrigido com sucesso."
+            NEW_VERSION=$(grep -iE "LABEL release=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
+            if [ "$NEW_VERSION" == "$EXPECTED_VERSION" ]; then
+                print_success "Versão corrigida com sucesso."
             else
-                echo "❌ Falha ao corrigir $service."
-                EXIT_CODE=1
+                print_error "Falha ao corrigir versão."
+                exit 1
             fi
         else
-            echo "❌ ERRO ($service): Versão no Dockerfile ($actual_version) difere de versions.env ($expected_version)"
-            EXIT_CODE=1
+            print_error "Versão no Dockerfile ($ACTUAL_VERSION) difere de versions.env ($EXPECTED_VERSION)"
+            print_plain "-----------------------------------"
+            print_info "Dica: Execute './scripts/validation/versions.sh --fix' para corrigir automaticamente."
+            exit 1
         fi
     else
-        echo "✅ OK ($service): Versão correta ($expected_version)"
+        print_success "Versão correta ($EXPECTED_VERSION)"
     fi
-}
 
-echo "🔍 Iniciando validação de versões..."
-echo "-----------------------------------"
-
-validate_service "appserver" "APPSERVER_VERSION"
-validate_service "dbaccess" "DBACCESS_VERSION"
-validate_service "licenseserver" "LICENSESERVER_VERSION"
-validate_service "mssql" "MSSQL_VERSION"
-validate_service "postgres" "POSTGRES_VERSION"
-validate_service "oracle" "ORACLE_VERSION"
-validate_service "smartview" "SMARTVIEW_VERSION"
-
-echo "-----------------------------------"
-if [ $EXIT_CODE -ne 0 ]; then
-    echo "🛑 Validação falhou! Algumas versões estão inconsistentes."
-    if [ "$AUTO_FIX" = false ]; then
-        echo "💡 Dica: Execute './scripts/validate-versions.sh --fix' para corrigir automaticamente."
-    fi
-    exit 1
-else
-    echo "🎉 Todas as versões estão sincronizadas."
-    exit 0
-fi
+    print_plain "-----------------------------------"
+    print_success "Validação concluída."
