@@ -2,8 +2,8 @@
 #
 # ==============================================================================
 # SCRIPT: versions.sh
-# DESCRIÇÃO: Valida se a versão definida no Dockerfile corresponde à versão
-#            centralizada no arquivo versions.env.
+# DESCRIÇÃO: Valida se as versões definidas no Dockerfile correspondem às versões
+#            centralizadas no arquivo versions.env.
 # AUTOR: Julian de Almeida Santos
 # DATA: 2025-10-12
 # USO: ./scripts/validation/versions.sh [--fix]
@@ -36,6 +36,36 @@ set -euo pipefail
         echo "$1"
     }
 
+    validate_label() {
+        local label_name=$1
+        local expected_value=$2
+        local actual_value
+        
+        actual_value=$(grep -iE "LABEL ${label_name}=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
+        
+        if [ "$actual_value" != "$expected_value" ]; then
+            if [ "$AUTO_FIX" = true ]; then
+                print_info "Corrigindo ${label_name}: $actual_value -> $expected_value"
+                sed -i "s/LABEL ${label_name}=\"${actual_value}\"/LABEL ${label_name}=\"${expected_value}\"/" "$DOCKERFILE"
+                
+                # Verifica se deu certo
+                local new_value
+                new_value=$(grep -iE "LABEL ${label_name}=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
+                if [ "$new_value" == "$expected_value" ]; then
+                    print_success "${label_name} corrigido com sucesso."
+                else
+                    print_error "Falha ao corrigir ${label_name}."
+                    EXIT_CODE=1
+                fi
+            else
+                print_error "${label_name}: Dockerfile ($actual_value) difere de versions.env ($expected_value)"
+                EXIT_CODE=1
+            fi
+        else
+            print_success "${label_name}: $expected_value"
+        fi
+    }
+
 # ----------------------------------------------------
 #   SEÇÃO 2: PARSE DE ARGUMENTOS
 # ----------------------------------------------------
@@ -61,10 +91,11 @@ set -euo pipefail
     fi
 
 # ----------------------------------------------------
-#   SEÇÃO 4: VALIDAÇÃO DE VERSÃO
+#   SEÇÃO 4: VALIDAÇÃO DE VERSÕES
 # ----------------------------------------------------
 
     DOCKERFILE="./Dockerfile"
+    EXIT_CODE=0
 
     if [ ! -f "$DOCKERFILE" ]; then
         print_warning "Dockerfile não encontrado. Pulando validação."
@@ -74,33 +105,19 @@ set -euo pipefail
     print_info "Iniciando validação de versões..."
     print_plain "-----------------------------------"
 
-    # Extrai versão atual do Dockerfile
-    ACTUAL_VERSION=$(grep -iE "LABEL release=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
-    EXPECTED_VERSION="${APPSERVER_VERSION}"
-
-    if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
-        if [ "$AUTO_FIX" = true ]; then
-            print_info "Corrigindo: $ACTUAL_VERSION -> $EXPECTED_VERSION"
-            
-            sed -i "s/LABEL release=\"$ACTUAL_VERSION\"/LABEL release=\"$EXPECTED_VERSION\"/" "$DOCKERFILE"
-            
-            # Verifica se deu certo
-            NEW_VERSION=$(grep -iE "LABEL release=" "$DOCKERFILE" | head -n 1 | cut -d'=' -f2 | tr -d '"' | tr -d "[:space:]")
-            if [ "$NEW_VERSION" == "$EXPECTED_VERSION" ]; then
-                print_success "Versão corrigida com sucesso."
-            else
-                print_error "Falha ao corrigir versão."
-                exit 1
-            fi
-        else
-            print_error "Versão no Dockerfile ($ACTUAL_VERSION) difere de versions.env ($EXPECTED_VERSION)"
-            print_plain "-----------------------------------"
-            print_info "Dica: Execute './scripts/validation/versions.sh --fix' para corrigir automaticamente."
-            exit 1
-        fi
-    else
-        print_success "Versão correta ($EXPECTED_VERSION)"
-    fi
+    # Valida cada label
+    validate_label "release" "${APPSERVER_VERSION}"
+    validate_label "build" "${APPSERVER_BUILD_VERSION}"
+    validate_label "dbapi" "${APPSERVER_DBAPI_VERSION}"
+    validate_label "webapp" "${APPSERVER_WEBAPP_VERSION}"
 
     print_plain "-----------------------------------"
+    
+    if [ $EXIT_CODE -ne 0 ]; then
+        if [ "$AUTO_FIX" = false ]; then
+            print_info "Dica: Execute './scripts/validation/versions.sh --fix' para corrigir automaticamente."
+        fi
+        exit 1
+    fi
+    
     print_success "Validação concluída."
