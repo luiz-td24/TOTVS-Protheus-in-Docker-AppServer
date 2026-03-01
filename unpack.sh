@@ -165,10 +165,10 @@ process_helps() {
     log_info "Iniciando processamento dos arquivos de Helps..."
 
     local found_file=""
-    found_file=$(find "$PACKAGES_DIR" -maxdepth 1 -iname "*HELPS_COMPL*.ZIP" -print -quit)
+    found_file=$(find "$PACKAGES_DIR" -maxdepth 1 -iname "*HELPS_COMP*.ZIP" -print -quit)
 
     if [[ -z "$found_file" ]]; then
-        log_warn "Nenhum pacote de Helps encontrado em '$PACKAGES_DIR' com '*HELPS_COMPL*.ZIP'. Pulando..."
+        log_warn "Nenhum pacote de Helps encontrado em '$PACKAGES_DIR' com '*HELPS_COMP*.ZIP'. Pulando..."
         return
     fi
 
@@ -193,10 +193,10 @@ process_dictionaries() {
     log_info "Iniciando processamento dos arquivos de Dicionários..."
 
     local found_file=""
-    found_file=$(find "$PACKAGES_DIR" -maxdepth 1 -iname "*DICIONARIOS_COMPL*.ZIP" -print -quit)
+    found_file=$(find "$PACKAGES_DIR" -maxdepth 1 -iname "*DICIONARIOS_COMP*.ZIP" -print -quit)
 
     if [[ -z "$found_file" ]]; then
-        log_warn "Nenhum pacote de Dicionários encontrado em '$PACKAGES_DIR' com '*DICIONARIOS_COMPL*.ZIP'. Pulando..."
+        log_warn "Nenhum pacote de Dicionários encontrado em '$PACKAGES_DIR' com '*DICIONARIOS_COMP*.ZIP'. Pulando..."
         return
     fi
 

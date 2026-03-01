@@ -90,8 +90,8 @@ packages/
 - **AppServer Binary** - `*APPSERVER_BUILD*.TAR.GZ`
 - **SmartClient WebApp** - `*SMARTCLIENT_WEBAPP*.TAR.GZ`
 - **Repositório de Objetos (RPO)** - `*REPOSITORIO_DE_OBJETOS*.RPO`
-- **Dicionários** - `*DICIONARIOS_COMPL*.ZIP`
-- **Helps** - `*HELPS_COMPL*.ZIP`
+- **Dicionários** - `*DICIONARIOS_COMP*.ZIP`
+- **Helps** - `*HELPS_COMP*.ZIP`
 - **Menus** - `*MENUS*.ZIP`
 
 ### 2. Extrair Pacotes
