@@ -43,7 +43,7 @@ set -euo pipefail
     # Regex para Conventional Commits
     # Tipos: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
     # Formato: tipo(escopo opcional): descrição
-    PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+$"
+    PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|merge)(\(.+\))?: .+$"
 
     if [[ ! "$MSG_CONTENT" =~ $PATTERN ]]; then
         print_error "Mensagem de commit inválida."

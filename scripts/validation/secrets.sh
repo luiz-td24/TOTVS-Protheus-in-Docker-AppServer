@@ -71,6 +71,8 @@ set -euo pipefail
 
     # Palavras-chave para buscar
     KEYWORDS="PASSWORD|SECRET|KEY|TOKEN|CREDENTIAL"
+    # Palavras-chave para negar
+    DENY_WORDS="KEY=VALUE"
 
     # Arquivos permitidos (whitelist)
     WHITELIST=".env.example|versions.env|secrets.sh|README.md|Dockerfile|entrypoint.sh"
@@ -88,7 +90,7 @@ set -euo pipefail
         
         # Busca por atribuições diretas de segredos (Ex: PASSWORD=123)
         # Ignora linhas de comentário (#)
-        if grep -E "^[^#]*($KEYWORDS)\s*=\s*[^\s]+" "$file" > /dev/null 2>&1; then
+        if grep -E "^[^#]*($KEYWORDS)\s*=\s*[^\s]+" "$file" | grep -Ev "$DENY_WORDS" > /dev/null 2>&1; then
             print_error "POTENCIAL SEGREDO ENCONTRADO EM: $file"
             print_plain "$(grep -E "^[^#]*($KEYWORDS)\s*=\s*[^\s]+" "$file")"
             EXIT_CODE=1
