@@ -1,10 +1,10 @@
 ARG IMAGE_BASE=redhat/ubi8:8.5-236
 FROM ${IMAGE_BASE}
 
-LABEL release="12.1.2310"
-LABEL build="20.3.2.23"
-LABEL dbapi="23.1.1.7"
-LABEL webapp="10.1.1"
+LABEL release="12.1.2510"
+LABEL build="24.3.1.1"
+LABEL dbapi="24.1.1.0"
+LABEL webapp="10.1.4"
 # Correção ortográfica: "Aplication" -> "Application"
 LABEL description="TOTVS Application Server Protheus" 
 LABEL maintainer="Julian de Almeida Santos <julian.santos.info@gmail.com>"
