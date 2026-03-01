@@ -49,19 +49,5 @@ set -euo pipefail
 #   SEÇÃO 3: LIMPEZA DE DIRETÓRIOS
 # ----------------------------------------------------
 
-    DIRS_TO_CLEAN=("totvs/protheus" "totvs/protheus_data" "packages")
-
-    for dir in "${DIRS_TO_CLEAN[@]}"; do
-        if [ -d "$dir" ]; then
-            print_info "Limpando arquivos não versionados em $dir..."
-            
-            # Remove arquivos não versionados e ignorados
-            git clean -fdx "$dir" > /dev/null 2>&1 || true
-            
-            print_success "Diretório $dir limpo."
-        else
-            print_warning "Diretório $dir não encontrado."
-        fi
-    done
-
-    print_success "Limpeza concluída após mudança de branch."
+    # Chama o script clean.sh
+    ./clean.sh
