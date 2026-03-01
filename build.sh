@@ -269,14 +269,40 @@ EOF
         done
 
         if [ "$rpo_found" = false ]; then
-            print_error "Nenhum arquivo RPO encontrado (tttmp.rpo, tttp.rpo, ttts.rpo ou ttte.rpo) em '${TOTVS_PROTHEUS_DIR}/apo/'."
-            exit 1
+            if [[ -f "unpack.sh" ]] && [[ -d "packages" ]]; then
+                print_info "RPO não encontrado. Tentando extrair..."
+                ./unpack.sh rpo
+                # Verifica novamente
+                for rpo_file in "tttm120.rpo" "tttp120.rpo" "ttte120.rpo" "ttts120.rpo"; do
+                    rpo_path="${TOTVS_PROTHEUS_DIR}/apo/${rpo_file}"
+                    if [ -f "$rpo_path" ]; then
+                        TOTVS_RPO_FILE="$rpo_path"
+                        rpo_found=true
+                        break
+                    fi
+                done
+            fi
+            
+            if [ "$rpo_found" = false ]; then
+                print_error "Nenhum arquivo RPO encontrado em '${TOTVS_PROTHEUS_DIR}/apo/'."
+                exit 1
+            fi
         fi
 
         for file in "${TOTVS_PROTHEUS_FILES[@]}"; do
-
+            if [ ! -f "$file" ]; then
+                if [[ -f "unpack.sh" ]] && [[ -d "packages" ]]; then
+                    if [[ "$file" == *"appsrvlinux"* ]]; then
+                        print_info "AppServer binário não encontrado. Tentando extrair..."
+                        ./unpack.sh appserver
+                    elif [[ "$file" == *"webapp.so"* ]]; then
+                        print_info "WebApp não encontrado. Tentando extrair..."
+                        ./unpack.sh webapp
+                    fi
+                fi
+            fi
+            
             check_file "${file}"
-
             print_success " * Arquivo '${file}' encontrado."
         done
 
@@ -290,9 +316,17 @@ EOF
 
         print_verify "Verificando o arquivo em protheus_data/system/..."
         for file in "${TOTVS_SYSTEM_FILES[@]}"; do
-            
+            if [ ! -f "$file" ]; then
+                if [[ -f "unpack.sh" ]] && [[ -d "packages" ]]; then
+                    print_info "Arquivos de menu não encontrados. Tentando extrair..."
+                    ./unpack.sh menus
+                    break
+                fi
+            fi
+        done
+        
+        for file in "${TOTVS_SYSTEM_FILES[@]}"; do
             check_file "${file}"
-            
             print_success " * Arquivo '${file}' encontrado."
         done 
 
@@ -306,9 +340,22 @@ EOF
 
         print_verify "Verificando o arquivo em protheus_data/systemload/..."
         for file in "${TOTVS_SYSTEMLOAD_FILES[@]}"; do
-            
+            if [ ! -f "$file" ]; then
+                if [[ -f "unpack.sh" ]] && [[ -d "packages" ]]; then
+                    if [[ "$file" == *"hlp"* ]]; then
+                        print_info "Arquivos de help não encontrados. Tentando extrair..."
+                        ./unpack.sh helps
+                    elif [[ "$file" == *"sx"* ]]; then
+                        print_info "Arquivos de dicionário não encontrados. Tentando extrair..."
+                        ./unpack.sh dictionaries
+                    fi
+                    break
+                fi
+            fi
+        done
+        
+        for file in "${TOTVS_SYSTEMLOAD_FILES[@]}"; do
             check_file "${file}"
-            
             print_success " * Arquivo '${file}' encontrado."
         done
 

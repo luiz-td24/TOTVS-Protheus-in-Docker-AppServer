@@ -6,6 +6,7 @@
 #              para as pastas correspondentes no projeto TOTVS Protheus.
 # AUTOR:       Julian de Almeida Santos
 # DATA:        2026-02-28
+# USO:         ./unpack.sh [appserver|webapp|rpo|helps|dictionaries|menus|all]
 # ==============================================================================
 
 set -euo pipefail
@@ -244,17 +245,44 @@ process_menus() {
 # ------------------------------------------------------------------------------
 
 main() {
+    local target="${1:-all}"
+    
     log_info "🚀 Iniciando o script de descompactação de dependências..."
     
-    process_appserver_bin
-    process_webapp
-    process_rpo
-    process_helps
-    process_dictionaries
-    process_menus
+    case "$target" in
+        appserver)
+            process_appserver_bin
+            ;;
+        webapp)
+            process_webapp
+            ;;
+        rpo)
+            process_rpo
+            ;;
+        helps)
+            process_helps
+            ;;
+        dictionaries)
+            process_dictionaries
+            ;;
+        menus)
+            process_menus
+            ;;
+        all)
+            process_appserver_bin
+            process_webapp
+            process_rpo
+            process_helps
+            process_dictionaries
+            process_menus
+            ;;
+        *)
+            log_error "Opção inválida: $target. Use: appserver|webapp|rpo|helps|dictionaries|menus|all"
+            ;;
+    esac
     
     echo "------------------------------------------------------------------------"
-    log_success "Processamento de todas as dependências concluído!"
+    log_success "Processamento concluído!"
 }
 
 main "$@"
