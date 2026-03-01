@@ -12,7 +12,7 @@ LABEL maintainer="Julian de Almeida Santos <julian.santos.info@gmail.com>"
 ARG EXTRACT_RESOURCES=true
 
 # Invalida cache quando EXTRACT_RESOURCES muda
-LABEL extract_resources="${EXTRACT_RESOURCES}"
+LABEL extract-resources="${EXTRACT_RESOURCES}"
 
 ENV APPSERVER_MODE=application
 ENV APPSERVER_RPO_CUSTOM="/totvs/protheus/apo/custom.rpo"
@@ -56,8 +56,9 @@ RUN chmod +x /entrypoint.sh /healthcheck.sh /service.sh
 
 COPY ./totvs /totvs
 
-RUN cd /totvs && \
-    if [ "$EXTRACT_RESOURCES" == "true" ]; then \
+WORKDIR /totvs
+
+RUN if [ "$EXTRACT_RESOURCES" = "true" ]; then \
         tar czvf protheus.tar.gz protheus && \
         tar czvf protheus_data.tar.gz protheus_data && \
         rm -rf protheus protheus_data; \
