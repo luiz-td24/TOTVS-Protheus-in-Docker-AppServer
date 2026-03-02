@@ -203,6 +203,11 @@ EOF
         "${TOTVS_SYSTEMLOAD_DIR}/sxsbra.txt"
     )
 
+    # Define o diretório atual
+    if ! cd "$(dirname -- "$0")" &> /dev/null; then
+        print_error "Não foi possível acessar o diretório '$CURRENT_PATH'."
+    fi
+
     # Define a tag final
     if [[ -n "$CUSTOM_TAG" ]]; then
         DOCKER_TAG="$CUSTOM_TAG"
