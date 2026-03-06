@@ -1,4 +1,5 @@
 ARG IMAGE_BASE=redhat/ubi8:8.5-236
+# hadolint ignore=DL3006
 FROM ${IMAGE_BASE}
 
 LABEL release="12.1.2510"
