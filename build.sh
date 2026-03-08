@@ -125,7 +125,7 @@ EOF
 
     DOCKER_PROGRESS="auto"
     DOCKER_NO_CACHE=""
-    EXTRACT_RESOURCES="true"
+    COMPRESS_RESOURCES="true"
     CUSTOM_TAG=""
     BUILD_ARGS=()
 
@@ -139,8 +139,8 @@ EOF
                 DOCKER_NO_CACHE="--no-cache"
                 shift
                 ;;
-            --no-extract)
-                EXTRACT_RESOURCES=false
+            --no-compress)
+                COMPRESS_RESOURCES="false"
                 shift
                 ;;
             --build-arg)
@@ -172,9 +172,10 @@ EOF
     check_versions
 
     # Detecta se está usando imagem base customizada
-    USING_CUSTOM_BASE=false
-    if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] && [[ -n "${IMAGE_BASE:-}" ]]; then
+    USING_CUSTOM_BASE="${USING_CUSTOM_BASE:-false}"
+    if [[ "${GITHUB_ACTIONS:-false}" == "true" || "${USING_CUSTOM_BASE}" == "true" ]] && [[ -n "${IMAGE_BASE:-}" ]]; then
         USING_CUSTOM_BASE=true
+        COMPRESS_RESOURCES="false" # Se utiliza imagem custom não comprime os recursos.
         print_info "Imagem base customizada detectada: ${IMAGE_BASE}"
     fi
 
@@ -374,7 +375,7 @@ EOF
     print_info "Tag: $DOCKER_TAG"
     print_info "Progress: $DOCKER_PROGRESS"
     print_info "Cache: $([ -n "$DOCKER_NO_CACHE" ] && echo "Desabilitado" || echo "Habilitado")"
-    print_info "Compress Resources: $([ "$EXTRACT_RESOURCES" = "true" ] && echo "Habilitado" || echo "Desabilitado")"
+    print_info "Compress Resources: $([ "$COMPRESS_RESOURCES" = "true" ] && echo "Habilitado" || echo "Desabilitado")"
     [[ ${#BUILD_ARGS[@]} -gt 0 ]] && print_info "Build Args: ${BUILD_ARGS[*]}"
 
     # Detecta se está rodando no GitHub Actions e adiciona IMAGE_BASE
@@ -384,7 +385,7 @@ EOF
     fi
 
     docker build \
-        --build-arg EXTRACT_RESOURCES="$EXTRACT_RESOURCES" \
+        --build-arg COMPRESS_RESOURCES="$COMPRESS_RESOURCES" \
         ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} \
         $DOCKER_NO_CACHE \
         --progress="$DOCKER_PROGRESS" \
