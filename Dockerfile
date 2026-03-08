@@ -10,10 +10,10 @@ LABEL webapp="10.1.4"
 LABEL description="TOTVS Application Server Protheus" 
 LABEL maintainer="Julian de Almeida Santos <julian.santos.info@gmail.com>"
 
-ARG EXTRACT_RESOURCES=true
+ARG COMPRESS_RESOURCES=true
 
-# Invalida cache quando EXTRACT_RESOURCES muda
-LABEL extract-resources="${EXTRACT_RESOURCES}"
+# Invalida cache quando COMPRESS_RESOURCES muda
+LABEL compress-resources="${COMPRESS_RESOURCES}"
 
 ENV APPSERVER_MODE=application
 ENV APPSERVER_RPO_CUSTOM="/totvs/protheus/apo/custom.rpo"
@@ -59,10 +59,10 @@ COPY ./totvs /totvs
 
 WORKDIR /totvs
 
-RUN if [ "$EXTRACT_RESOURCES" = "true" ]; then \
-        tar czvf protheus.tar.gz protheus && \
-        tar czvf protheus_data.tar.gz protheus_data && \
-        rm -rf protheus protheus_data; \
+RUN if [ "$COMPRESS_RESOURCES" = "true" ]; then \
+    tar czvf protheus.tar.gz protheus && \
+    tar czvf protheus_data.tar.gz protheus_data && \
+    rm -rf protheus protheus_data; \
     fi
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
