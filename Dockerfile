@@ -1,4 +1,5 @@
 ARG IMAGE_BASE=redhat/ubi8:8.5-236
+# hadolint ignore=DL3006
 FROM ${IMAGE_BASE}
 
 LABEL release="12.1.2310"
@@ -59,9 +60,9 @@ COPY ./totvs /totvs
 WORKDIR /totvs
 
 RUN if [ "$EXTRACT_RESOURCES" = "true" ]; then \
-        tar czvf protheus.tar.gz protheus && \
-        tar czvf protheus_data.tar.gz protheus_data && \
-        rm -rf protheus protheus_data; \
+    tar czvf protheus.tar.gz protheus && \
+    tar czvf protheus_data.tar.gz protheus_data && \
+    rm -rf protheus protheus_data; \
     fi
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
