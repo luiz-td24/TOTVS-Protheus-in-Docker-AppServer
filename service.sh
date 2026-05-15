@@ -124,6 +124,7 @@ ini_file_path="${bin_path}/${ini_file}"
 	check_env_vars "APPSERVER_REST_PORT"
 	check_env_vars "APPSERVER_WEB_MANAGER"
 	check_env_vars "APPSERVER_ENVIRONMENT_LOCALFILES"
+	check_env_vars "APPSERVER_GENERAL_CHECKSPECIALKEY"
 	check_env_vars "APPSERVER_SQLITE_SERVER"
 	check_env_vars "APPSERVER_SQLITE_PORT"
 	check_env_vars "APPSERVER_SQLITE_INSTANCES"
@@ -167,6 +168,7 @@ ini_file_path="${bin_path}/${ini_file}"
 
 	# Atualiza o arquivo INI com as variáveis de ambiente
 	sed -i "s|APPSERVER_ENVIRONMENT_SPECIALKEY|${APPSERVER_ENVIRONMENT_SPECIALKEY:-Prod}|g" ${ini_file_path}
+	sed -i "s|APPSERVER_GENERAL_CHECKSPECIALKEY|${APPSERVER_GENERAL_CHECKSPECIALKEY:-0}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_RPO_CUSTOM|${APPSERVER_RPO_CUSTOM}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_DBACCESS_DATABASE|${APPSERVER_DBACCESS_DATABASE}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_DBACCESS_SERVER|${APPSERVER_DBACCESS_SERVER}|g" ${ini_file_path}
