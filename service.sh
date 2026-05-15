@@ -166,6 +166,7 @@ ini_file_path="${bin_path}/${ini_file}"
 	echo "⚙️ Aplicando substituições de variáveis..."
 
 	# Atualiza o arquivo INI com as variáveis de ambiente
+	sed -i "s|APPSERVER_ENVIRONMENT_SPECIALKEY|${APPSERVER_ENVIRONMENT_SPECIALKEY:-Prod}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_RPO_CUSTOM|${APPSERVER_RPO_CUSTOM}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_DBACCESS_DATABASE|${APPSERVER_DBACCESS_DATABASE}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_DBACCESS_SERVER|${APPSERVER_DBACCESS_SERVER}|g" ${ini_file_path}
