@@ -170,6 +170,7 @@ ini_file_path="${bin_path}/${ini_file}"
 	# Atualiza o arquivo INI com as variáveis de ambiente
 	sed -i "s|APPSERVER_ENVIRONMENT_SPECIALKEY|${APPSERVER_ENVIRONMENT_SPECIALKEY:-Prod}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_ENVIRONMENT_TYPE|${APPSERVER_ENVIRONMENT_TYPE:-0}|g" ${ini_file_path}
+	sed -i "s|APPSERVER_ENVIRONMENT_DBHOMOLOGATED|${APPSERVER_ENVIRONMENT_DBHOMOLOGATED:-0}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_GENERAL_CHECKSPECIALKEY|${APPSERVER_GENERAL_CHECKSPECIALKEY:-0}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_RPO_CUSTOM|${APPSERVER_RPO_CUSTOM}|g" ${ini_file_path}
 	sed -i "s|APPSERVER_DBACCESS_DATABASE|${APPSERVER_DBACCESS_DATABASE}|g" ${ini_file_path}
